@@ -1,0 +1,59 @@
+###############################################################################
+#                          Generated on phpdocker.io                          #
+###############################################################################
+version: "3.1"
+services:
+
+    redis:
+      image: redis:alpine
+      container_name: house-chooser-redis
+      networks:
+        house-chooser-network:
+          ipv4_address: 172.19.0.5
+
+    postgres:
+      image: postgres:11.1-alpine
+      container_name: house-chooser-postgres
+      working_dir: /application
+      volumes:
+        - .:/application
+      environment:
+        - POSTGRES_USER=root
+        - POSTGRES_PASSWORD=rootpassword
+        - POSTGRES_DB=house_chooser
+      ports:
+        - "8084:5432"
+      networks:
+        house-chooser-network:
+          ipv4_address: 172.19.0.4
+
+    webserver:
+      image: nginx:alpine
+      container_name: house-chooser-webserver
+      working_dir: /application
+      volumes:
+          - .:/application
+          - ./phpdocker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      ports:
+       - "8080:80"
+      networks:
+        house-chooser-network:
+          ipv4_address: 172.19.0.3
+
+    php-fpm:
+      build: phpdocker/php-fpm
+      container_name: house-chooser-php-fpm
+      working_dir: /application
+      volumes:
+        - .:/application
+        - ./phpdocker/php-fpm/php-ini-overrides.ini:/etc/php/7.4/fpm/conf.d/99-overrides.ini
+      networks:
+        house-chooser-network:
+          ipv4_address: 172.19.0.2
+
+networks:
+  house-chooser-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.19.0.0/28"
